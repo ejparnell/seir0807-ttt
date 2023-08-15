@@ -17,12 +17,37 @@ class Square {
 	static renderLookup = {
 		1: 'purple',
 		'-1': 'orange',
-		null: 'pink',
+		null: 'darkgray',
 	}
 
     render() {
         this.domElement.style.backgroundColor = Square.renderLookup[this.value]
     }
+}
+
+class ImageSquare extends Square {
+	constructor(domElement, secondsPerRotation = 0) {
+		// here is where we call super
+		// super will just run our superclasses constructor method
+		super(domElement)
+        this.domElement.style.animationDuration = `${secondsPerRotation}s`
+	}
+
+	static renderLookup = {
+		1: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png',
+		'-1': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png',
+		null: 'darkgrey',
+	}
+
+	render() {
+		if (this.value) {
+			this.domElement.style.backgroundImage = `url(${
+				ImageSquare.renderLookup[this.value]
+			})`
+		} else {
+			this.domElement.style.backgroundImage = ''
+		}
+	}
 }
 
 class TicTacToeGame {
@@ -33,7 +58,41 @@ class TicTacToeGame {
 		this.messageElement = messageElement
 		// you don't need to pass in all of the properties we can just assign some
 		this.squareEls = [...boardElement.querySelectorAll('div')]
+
+        // if we didn't use a arrow function the `this` keyword would point to the `window` object
+        this.boardElement.addEventListener('click', event => {
+            const idx = this.squareEls.indexOf(event.target)
+
+            if (
+                idx === -1 ||
+                this.squareEls[idx].value ||
+                this.winner
+            ) return
+
+            this.squares[idx].value = this.turn
+            this.turn *= -1
+            this.winner = this.getWinner()
+            this.render()
+        })
 	}
+
+    getWinner() {
+        const combos = TicTacToeGame.winningCombos
+        for (let i = 0; i < combos.length; i++) {
+            if (
+                Math.abs(
+                    this.squares[combos[i][0]].value +
+                    this.squares[combos[i][1]].value +
+                    this.squares[combos[i][2]].value
+                ) === 3
+            ) {
+                return this.squares[combos[i][0]].value
+            }
+        }
+
+        if (this.squares.some(square => square.value === null)) return null
+        return 'T'
+    }
 
 	play() {
 		//init the game state
@@ -43,13 +102,21 @@ class TicTacToeGame {
         // this.squareEls - array of divs which is the game board
         // cb function - making a new object that hold the div element
         // this.squares - saving those new Square instances 
-		this.squares = this.squareEls.map((el) => new Square(el))
+		this.squares = this.squareEls.map((el) => new ImageSquare(el, 3))
 		// set our game state we render
 		this.render()
 	}
 
 	render() {
-		console.log('Rendering game...')
+		this.squares.forEach(square => square.render())
+
+        if (this.winner === 'T') {
+            this.messageElement.innerHTML = 'TIE!!!'
+        } else if (this.winner) {
+            this.messageElement.innerHTML = `Player ${this.winner === 1 ? 1 : 2} Wins`
+        } else {
+            this.messageElement.innerHTML = `Player ${this.turn === 1 ? 1 : 2} Turn`
+        }
 	}
 
 	toString() {
